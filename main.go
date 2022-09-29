@@ -31,7 +31,7 @@ func main() {
 	}
 	if *interval == "monthly" {
 		log.Info().Str("Time", *runAt).Str("Day", "Monday").Msg("Running monthly cleanup job at")
-		s.Every(1).MonthFirstWeekday(time.Monday).At(*runAt).Do(job)
+		s.MonthFirstWeekday(time.Monday).At(*runAt).Do(job)
 	}
 	if *interval == "once" {
 		job()
