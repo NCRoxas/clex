@@ -1,0 +1,14 @@
+[Unit]
+Description=Clex
+After=network.target
+ 
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/home/roxas/.local/bin/clex
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
