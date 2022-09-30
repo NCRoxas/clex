@@ -1,6 +1,8 @@
 # Clex
 
-Utility to automatically cleanup watched shows and movies to save disk space and your time. Only Linux is supported at the moment!
+Utility to automatically cleanup watched shows and movies to save disk space and your time. \
+
+Only Linux is supported at the moment!
 
 ## Features:
 
