@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=root
 Group=root
-ExecStart=/home/roxas/.local/bin/clex
+ExecStart=/usr/local/bin/clex
 Restart=on-failure
 RestartSec=5
 
