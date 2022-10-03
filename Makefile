@@ -1,8 +1,8 @@
 build:
-	go build -o clex main.go
+	go build -o bin/clex main.go
  
 install: build
-	sudo mv ./clex /usr/local/bin
+	sudo mv bin/clex /usr/local/bin
 	sudo cp clex.service /etc/systemd/system/
 	sudo systemctl daemon-reload
 
