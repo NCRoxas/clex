@@ -24,32 +24,50 @@ func ScanMedia(c *util.Config) ([]PlexMedia, []PlexMedia) {
 		}
 	}
 
-	movies := make(chan []PlexMedia)
-	shows := make(chan []PlexMedia)
-	for _, v := range watchedLibs {
-		go filterMedia(c, v.Key, v.Type, movies, shows)
+	movies := make(chan PlexMedia)
+	shows := make(chan PlexMedia)
+	quit := make(chan int)
+
+	movieList := []PlexMedia{}
+	showList := []PlexMedia{}
+
+	go func() {
+		for _, v := range watchedLibs {
+			filterMedia(c, v.Key, v.Type, movies, shows)
+		}
+		quit <- 0
+	}()
+
+	for {
+		select {
+		case s := <-shows:
+			showList = append(showList, s)
+		case m := <-movies:
+			movieList = append(movieList, m)
+		case <-quit:
+			return movieList, showList
+		}
 	}
 
-	return <-movies, <-shows
 }
 
-func filterMedia(c *util.Config, key, mediaType string, movies, shows chan []PlexMedia) {
+func filterMedia(c *util.Config, key, mediaType string, movies, shows chan PlexMedia) {
 	baseUrl := fmt.Sprintf("%v/library/sections/%v/all/", c.PlexURL, key)
 
 	if mediaType == "movie" {
 		data := fetch(baseUrl+"?unwatched=0", c.PlexToken)
-		watchedMovies := []PlexMedia{}
+		//watchedMovies := []PlexMedia{}
 
 		for _, v := range data.Media {
-			watchedMovies = append(watchedMovies, v)
+			//watchedMovies = append(watchedMovies, v)
+			movies <- v
 			log.Info().Str("Title", v.Title).Msg("Found watched movie:")
 		}
-		movies <- watchedMovies
 	}
 
 	if mediaType == "show" {
 		data := fetch(baseUrl, c.PlexToken)
-		watchedSeries := []PlexMedia{}
+		//watchedSeries := []PlexMedia{}
 
 		for _, v := range data.Media {
 			// Filter seasons containing watched episodes
@@ -64,13 +82,14 @@ func filterMedia(c *util.Config, key, mediaType string, movies, shows chan []Ple
 				for _, e := range dataEpisode.Media {
 					//	Remove unfinished episodes
 					if e.ViewCount > 0 && e.ViewOffset == 0 {
-						watchedSeries = append(watchedSeries, e)
+						//watchedSeries = append(watchedSeries, e)
+						shows <- e
 						log.Info().Str("Show", e.GrandparentTitle).Str("Title", e.Title).Int64("Season", e.SeasonNumber).Int64("Episode", e.EpisodeNumber).Msg("Found watched show:")
 					}
 				}
 			}
 		}
-		shows <- watchedSeries
+		//shows <- watchedSeries
 	}
 }
 

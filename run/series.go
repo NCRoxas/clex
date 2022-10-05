@@ -21,7 +21,6 @@ func QueueSeries(sc *starr.Config, media []PlexMedia, deleteMode bool) {
 			if strings.EqualFold(show.Title, m.GrandparentTitle) {
 				episodes = append(episodes, m.EpisodeNumber)
 				season[m.SeasonNumber] = episodes
-
 				watchedShows[show.ID] = season
 			}
 		}
