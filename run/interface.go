@@ -22,6 +22,7 @@ type PlexMedia struct {
 	Title            string `json:"title"`
 	ParentTitle      string `json:"parentTitle"`
 	GrandparentTitle string `json:"grandparentTitle"`
+	OriginalTitle    string `json:"originalTitle"`
 	EpisodeNumber    int64  `json:"index"`
 	SeasonNumber     int64  `json:"parentIndex"`
 	ViewOffset       int64  `json:"viewOffset"`

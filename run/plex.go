@@ -56,10 +56,8 @@ func filterMedia(c *util.Config, key, mediaType string, movies, shows chan PlexM
 
 	if mediaType == "movie" {
 		data := fetch(baseUrl+"?unwatched=0", c.PlexToken)
-		//watchedMovies := []PlexMedia{}
 
 		for _, v := range data.Media {
-			//watchedMovies = append(watchedMovies, v)
 			movies <- v
 			log.Info().Str("Title", v.Title).Msg("Found watched movie:")
 		}
@@ -67,7 +65,6 @@ func filterMedia(c *util.Config, key, mediaType string, movies, shows chan PlexM
 
 	if mediaType == "show" {
 		data := fetch(baseUrl, c.PlexToken)
-		//watchedSeries := []PlexMedia{}
 
 		for _, v := range data.Media {
 			// Filter seasons containing watched episodes
@@ -82,14 +79,12 @@ func filterMedia(c *util.Config, key, mediaType string, movies, shows chan PlexM
 				for _, e := range dataEpisode.Media {
 					//	Remove unfinished episodes
 					if e.ViewCount > 0 && e.ViewOffset == 0 {
-						//watchedSeries = append(watchedSeries, e)
 						shows <- e
 						log.Info().Str("Show", e.GrandparentTitle).Str("Title", e.Title).Int64("Season", e.SeasonNumber).Int64("Episode", e.EpisodeNumber).Msg("Found watched show:")
 					}
 				}
 			}
 		}
-		//shows <- watchedSeries
 	}
 }
 
