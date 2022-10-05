@@ -49,8 +49,8 @@ func job() {
 	}
 
 	watchedMovies, watchedSeries := run.ScanMedia(&c)
-	run.QueueMovies(radarr, watchedMovies)
-	run.QueueSeries(sonarr, watchedSeries)
+	run.QueueMovies(radarr, watchedMovies, c.DeleteMode)
+	run.QueueSeries(sonarr, watchedSeries, c.DeleteMode)
 
 	log.Info().Msg("Cleanup finished!")
 }

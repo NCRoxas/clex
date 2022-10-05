@@ -25,6 +25,7 @@ type Config struct {
 	SonarrToken      string   `yaml:"sonarr_token"`
 	RadarrToken      string   `yaml:"radarr_token"`
 	ClientId         string   `yaml:"client_id"`
+	DeleteMode       bool     `yaml:"delete_mode"`
 	WatchedLibraries []string `yaml:"watched_libraries"`
 }
 
@@ -37,6 +38,7 @@ func (c *Config) InitConfig() (*starr.Config, *starr.Config, error) {
 			SonarrURL:        "http://127.0.0.1:8989",
 			RadarrURL:        "http://127.0.0.1:7878",
 			ClientId:         id.String(),
+			DeleteMode:       true,
 			WatchedLibraries: []string{"Movies", "TV Shows"},
 		}
 		c.WriteConfig()

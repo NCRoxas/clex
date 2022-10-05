@@ -8,7 +8,7 @@ import (
 	"golift.io/starr/sonarr"
 )
 
-func QueueSeries(sc *starr.Config, media []PlexMedia) {
+func QueueSeries(sc *starr.Config, media []PlexMedia, deleteMode bool) {
 	s := sonarr.New(sc)
 	series, _ := s.GetAllSeries()
 
@@ -46,7 +46,7 @@ func QueueSeries(sc *starr.Config, media []PlexMedia) {
 	s.MonitorEpisode(marked.Watched, false)
 
 	// Unmonitor seasons
-	for id, _ := range watchedShows {
+	for id := range watchedShows {
 		show, _ := s.GetSeriesByID(id)
 		episodes, _ := s.GetSeriesEpisodes(id)
 		watchedSe := 0
@@ -86,8 +86,10 @@ func QueueSeries(sc *starr.Config, media []PlexMedia) {
 	}
 
 	// Delete Episodefiles
-	for _, file := range marked.EpisodeFiles {
-		s.DeleteEpisodeFile(file)
+	if deleteMode {
+		for _, file := range marked.EpisodeFiles {
+			s.DeleteEpisodeFile(file)
+		}
 	}
 }
 

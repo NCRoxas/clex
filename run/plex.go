@@ -24,38 +24,34 @@ func ScanMedia(c *util.Config) ([]PlexMedia, []PlexMedia) {
 		}
 	}
 
-	watchedMovies := []PlexMedia{}
-	watchedSeries := []PlexMedia{}
+	movies := make(chan []PlexMedia)
+	shows := make(chan []PlexMedia)
 	for _, v := range watchedLibs {
-		filterMedia := getWatchedMedia(c, v.Key)
-		if v.Type == "movie" {
-			watchedMovies = append(watchedMovies, filterMedia...)
-		}
-
-		if v.Type == "show" {
-			watchedSeries = append(watchedSeries, filterMedia...)
-		}
-
+		go filterMedia(c, v.Key, v.Type, movies, shows)
 	}
 
-	return watchedMovies, watchedSeries
+	return <-movies, <-shows
 }
 
-func getWatchedMedia(c *util.Config, key string) []PlexMedia {
+func filterMedia(c *util.Config, key, mediaType string, movies, shows chan []PlexMedia) {
 	baseUrl := fmt.Sprintf("%v/library/sections/%v/all/", c.PlexURL, key)
-	dataShows := fetch(baseUrl, c.PlexToken)
-	dataMovies := fetch(baseUrl+"?unwatched=0", c.PlexToken)
 
-	watched := []PlexMedia{}
-	for _, v := range dataMovies.Media {
-		if v.Type == "movie" {
-			watched = append(watched, v)
+	if mediaType == "movie" {
+		data := fetch(baseUrl+"?unwatched=0", c.PlexToken)
+		watchedMovies := []PlexMedia{}
+
+		for _, v := range data.Media {
+			watchedMovies = append(watchedMovies, v)
 			log.Info().Str("Title", v.Title).Msg("Found watched movie:")
 		}
+		movies <- watchedMovies
 	}
 
-	for _, v := range dataShows.Media {
-		if v.Type == "show" {
+	if mediaType == "show" {
+		data := fetch(baseUrl, c.PlexToken)
+		watchedSeries := []PlexMedia{}
+
+		for _, v := range data.Media {
 			// Filter seasons containing watched episodes
 			urlShow := fmt.Sprintf("%v%v?unwatched=0", c.PlexURL, v.Key)
 			dataSeason := fetch(urlShow, c.PlexToken)
@@ -68,15 +64,14 @@ func getWatchedMedia(c *util.Config, key string) []PlexMedia {
 				for _, e := range dataEpisode.Media {
 					//	Remove unfinished episodes
 					if e.ViewCount > 0 && e.ViewOffset == 0 {
-						watched = append(watched, e)
+						watchedSeries = append(watchedSeries, e)
 						log.Info().Str("Show", e.GrandparentTitle).Str("Title", e.Title).Int64("Season", e.SeasonNumber).Int64("Episode", e.EpisodeNumber).Msg("Found watched show:")
 					}
 				}
 			}
 		}
+		shows <- watchedSeries
 	}
-
-	return watched
 }
 
 func fetch(url string, token string) data {

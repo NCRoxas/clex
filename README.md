@@ -17,6 +17,22 @@ If you have go installed just run `make install`
 
 Or just download the binary from the release and copy it to `/usr/local/bin/` if you want to use systemd service files. Other directories tend be problematic on systems with selinux enabled. If you use a different directory adjust the clex.service file.
 
+## Config example
+
+```yaml
+plex_url: https://plex.example.com
+sonarr_url: https://sonarr.example.com
+radarr_url: https://radarr.example.com
+plex_token: xxx
+sonarr_token: xxx
+radarr_token: xxx
+client_id: xxx
+delete_mode: true
+watched_libraries:
+    - Movies
+    - TV Shows
+```
+
 ## Usage
 
 First time running the app will create a config file in the directory `~/.config/clex`. Just fill in the urls of your plex, sonarr, radarr instances, the sonarr/radarr api keys and which libraries you want to watch. The plex token will be automatically added when you click the authentication link after starting the app again. The client id can be ignored.

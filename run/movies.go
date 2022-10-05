@@ -14,7 +14,7 @@ import (
 )
 
 // TODO: Refactor some stuff
-func QueueMovies(sc *starr.Config, media []PlexMedia) {
+func QueueMovies(sc *starr.Config, media []PlexMedia, deleteMode bool) {
 	r := radarr.New(sc)
 	movies, _ := r.GetMovie(0)
 
@@ -28,14 +28,16 @@ func QueueMovies(sc *starr.Config, media []PlexMedia) {
 	}
 
 	// Delete movie files and add exclusion
-	url := fmt.Sprintf("%v/api/v3/movie/editor?apikey=%v", sc.URL, sc.APIKey)
-	request, _ := json.Marshal(map[string]any{
-		"movieIds":           marked.Watched,
-		"monitored":          false,
-		"deleteFiles":        true,
-		"addImportExclusion": true,
-	})
-	deleteMovie(url, request)
+	if deleteMode {
+		url := fmt.Sprintf("%v/api/v3/movie/editor?apikey=%v", sc.URL, sc.APIKey)
+		request, _ := json.Marshal(map[string]any{
+			"movieIds":           marked.Watched,
+			"monitored":          false,
+			"deleteFiles":        true,
+			"addImportExclusion": true,
+		})
+		deleteMovie(url, request)
+	}
 }
 
 func deleteMovie(url string, request []byte) {
