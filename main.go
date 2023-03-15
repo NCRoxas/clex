@@ -17,7 +17,7 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	interval := flag.String("interval", "weekly", "Set interval of cleanup job. Choices are: once, daily, weekly, monthly")
+	interval := flag.String("interval", "once", "Set interval of cleanup job. Choices are: once, daily, weekly, monthly")
 	runAt := flag.String("time", "05:00", "Set time when to run cleanup job")
 	flag.Parse()
 
@@ -44,13 +44,19 @@ func job() {
 	var c util.Config
 	sonarr, radarr, err := c.InitConfig()
 	if err != nil {
-		log.Error().Msg(err.Error())
-		return
+		log.Fatal().Err(err).Msg("Failed to initialize config")
 	}
+	c.PlexVerify()
 
 	watchedMovies, watchedSeries := run.ScanMedia(&c)
-	run.QueueMovies(radarr, watchedMovies, c.DeleteMode)
-	run.QueueSeries(sonarr, watchedSeries, c.DeleteMode)
-
-	log.Info().Msg("Cleanup finished!")
+	if radarr != nil {
+		run.QueueMovies(radarr, watchedMovies, &c)
+	} else {
+		log.Info().Msg("Radarr is not enabled. Skipping...")
+	}
+	if sonarr != nil {
+		run.QueueSeries(sonarr, watchedSeries, &c)
+	} else {
+		log.Info().Msg("Sonarr is not enabled. Skipping...")
+	}
 }

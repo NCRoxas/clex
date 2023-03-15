@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,7 +35,7 @@ const (
 )
 
 func (c *Config) PlexVerify() {
-	host, err := url.Parse(c.PlexURL)
+	host, err := url.Parse(c.Hosts.Plex)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Malformed URL:")
 		return
@@ -49,7 +51,7 @@ func (c *Config) PlexVerify() {
 		return
 	}
 
-	if c.PlexToken != "" {
+	if c.Tokens.Plex != "" {
 		c.CheckToken()
 	} else {
 		log.Info().Msg("Requesting new token...")
@@ -58,13 +60,17 @@ func (c *Config) PlexVerify() {
 			log.Fatal().Err(err)
 		}
 
-		pin.AuthUrl()
+		cmd := pin.AuthUrl()
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go pin.Poll(&wg)
 		wg.Wait()
 
-		c.PlexToken = pin.AuthToken
+		if err := cmd.Process.Kill(); err != nil {
+			log.Warn().Msg("Browser closing failed.")
+		}
+
+		c.Tokens.Plex = pin.AuthToken
 		c.WriteConfig()
 	}
 }
@@ -98,7 +104,7 @@ func (c *Config) GeneratePin() (*PinData, error) {
 	return &p, nil
 }
 
-func (p *PinData) AuthUrl() {
+func (p *PinData) AuthUrl() *exec.Cmd {
 	v := url.Values{
 		"clientID":                 {p.ClientIdentifier},
 		"code":                     {p.Code},
@@ -106,6 +112,26 @@ func (p *PinData) AuthUrl() {
 	}
 	url := fmt.Sprintf("https://app.plex.tv/auth#?%s", v.Encode())
 	log.Info().Str("URL", url).Msg("Authentication URL:")
+
+	// Opens browser on various platforms
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		log.Info().Msg("Can't open browser, copy the url above and paste it into your browser!")
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		log.Fatal().Err(err)
+	}
+
+	return cmd
 }
 
 func (c *Config) CheckToken() {
@@ -113,7 +139,7 @@ func (c *Config) CheckToken() {
 		"strong":                   {"true"},
 		"X-Plex-product":           {"Autoclean Plex"},
 		"X-Plex-client-Identifier": {c.ClientId},
-		"X-Plex-Token":             {c.PlexToken},
+		"X-Plex-Token":             {c.Tokens.Plex},
 	}
 	req, err := http.NewRequest("GET", plexUser, strings.NewReader(form.Encode()))
 	if err != nil {
@@ -130,15 +156,15 @@ func (c *Config) CheckToken() {
 
 	// Redo Authentication Process
 	if resp.StatusCode == 401 {
-		c.PlexToken = ""
+		c.Tokens.Plex = ""
 		c.WriteConfig()
 		c.PlexVerify()
 	}
 }
 
 func (p *PinData) Poll(wg *sync.WaitGroup) {
-	status := true
-	for status {
+	defer wg.Done()
+	for {
 		v := url.Values{
 			"code":                     {p.Code},
 			"X-Plex-client-Identifier": {p.ClientIdentifier},
@@ -162,9 +188,8 @@ func (p *PinData) Poll(wg *sync.WaitGroup) {
 		}
 
 		if p.AuthToken != "" {
-			status = false
+			break
 		}
 		time.Sleep(time.Second * 1)
 	}
-	wg.Done()
 }

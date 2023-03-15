@@ -3,46 +3,34 @@ package run
 import (
 	"strings"
 
+	"github.com/NCRoxas/clex/util"
 	"github.com/rs/zerolog/log"
 	"golift.io/starr"
 	"golift.io/starr/sonarr"
 )
 
-func QueueSeries(sc *starr.Config, media []PlexMedia, deleteMode bool) {
+func QueueSeries(sc *starr.Config, media []PlexMedia, c *util.Config) {
 	s := sonarr.New(sc)
 	series, _ := s.GetAllSeries()
 
-	watchedShows := map[int64]map[int64][]int64{}
-	for _, show := range series {
-		episodes := []int64{}
-		season := map[int64][]int64{}
-
-		for _, m := range media {
-			if strings.EqualFold(show.Title, m.OriginalTitle) || strings.EqualFold(show.Title, m.GrandparentTitle) {
-				episodes = append(episodes, m.EpisodeNumber)
-				season[m.SeasonNumber] = episodes
-				watchedShows[show.ID] = season
-			}
-		}
-	}
+	watchedShows := filterWatchedShows(series, media)
 
 	// Get episode file numbers
-	marked := Marked{}
+	queue := Queue{}
 	for id, info := range watchedShows {
 		sonarrFileInfo, _ := s.GetSeriesEpisodes(id)
-
 		for season, episodes := range info {
 			for _, file := range sonarrFileInfo {
 				if file.SeasonNumber == season && findEpisode(episodes, file.EpisodeNumber) {
-					marked.Watched = append(marked.Watched, file.ID)                      // ID of episode
-					marked.EpisodeFiles = append(marked.EpisodeFiles, file.EpisodeFileID) // ID of file on disk
+					queue.Watched = append(queue.Watched, file.ID)          // ID of episode in sonarr
+					queue.FileID = append(queue.FileID, file.EpisodeFileID) // ID of file on disk
 				}
 			}
 		}
 	}
 
 	// Unmonitor episodes
-	s.MonitorEpisode(marked.Watched, false)
+	s.MonitorEpisode(queue.Watched, false)
 
 	// Unmonitor seasons
 	for id := range watchedShows {
@@ -85,10 +73,13 @@ func QueueSeries(sc *starr.Config, media []PlexMedia, deleteMode bool) {
 	}
 
 	// Delete Episodefiles
-	if deleteMode {
-		for _, file := range marked.EpisodeFiles {
+	if c.Delete {
+		for _, file := range queue.FileID {
 			s.DeleteEpisodeFile(file)
 		}
+		log.Info().Msgf("Deleted %d episodes", len(queue.Watched))
+	} else {
+		log.Info().Msgf("Unmonitored %d episodes", len(queue.Watched))
 	}
 }
 
@@ -99,4 +90,23 @@ func findEpisode(slice []int64, val int64) bool {
 		}
 	}
 	return false
+}
+
+// Filters info from watched shows (id: season: [episodes])
+func filterWatchedShows(series []*sonarr.Series, media []PlexMedia) map[int64]map[int64][]int64 {
+	shows := map[int64]map[int64][]int64{}
+
+	for _, show := range series {
+		episodes := []int64{}
+		season := map[int64][]int64{}
+
+		for _, m := range media {
+			if strings.EqualFold(show.Title, m.OriginalTitle) || strings.EqualFold(show.Title, m.GrandparentTitle) {
+				episodes = append(episodes, m.EpisodeNumber)
+				season[m.SeasonNumber] = episodes
+				shows[show.ID] = season
+			}
+		}
+	}
+	return shows
 }

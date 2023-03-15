@@ -9,12 +9,6 @@ type data struct {
 	Library []Library   `json:"Directory"`
 }
 
-type Library struct {
-	Key   string `json:"key"`
-	Type  string `json:"type"`
-	Title string `json:"title"`
-}
-
 type PlexMedia struct {
 	RatingKey        int64  `json:"ratingKey,string"`
 	Key              string `json:"key"`
@@ -29,7 +23,13 @@ type PlexMedia struct {
 	ViewCount        int64  `json:"viewCount"`
 }
 
-type Marked struct {
-	Watched      []int64
-	EpisodeFiles []int64
+type Library struct {
+	Key   string `json:"key"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
+}
+
+type Queue struct {
+	Watched []int64
+	FileID  []int64
 }
