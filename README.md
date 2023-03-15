@@ -13,7 +13,7 @@ Only Linux is supported at the moment!
 
 ## Installation
 
-If you have go installed just run `make install`
+If you have go installed clone this repository and run `make install`
 
 Or just download the binary from the release and copy it to `~/.local/bin/` if you want to use systemd service files. Other directories tend be problematic on systems with selinux enabled. If you use a different directory adjust the clex.service file.
 You can find an example service in this repository "clex.service". Copy it to `~/.config/systemd/user/clex.service`, enable it with `systemctl --user enable clex` and start it with `systemctl --user start clex`
