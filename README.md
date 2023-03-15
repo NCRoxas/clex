@@ -20,15 +20,18 @@ Or just download the binary from the release and copy it to `/usr/local/bin/` if
 ## Config example
 
 ```yaml
-plex_url: https://plex.example.com
-sonarr_url: https://sonarr.example.com
-radarr_url: https://radarr.example.com
-plex_token: xxx
-sonarr_token: xxx
-radarr_token: xxx
-client_id: xxx
-delete_mode: true
-watched_libraries:
+hosts:
+    plex: https://plex.example.com
+    sonarr: https://sonarr.example.com
+    radarr: https://radarr.example.com
+tokens:
+    plex: ...
+    sonarr: ...
+    radarr: ...
+delete: true
+exclude: true
+client_id: ...
+libraries:
     - Movies
     - TV Shows
 ```
@@ -37,6 +40,6 @@ watched_libraries:
 
 First time running the app will create a config file in the directory `~/.config/clex`. Just fill in the urls of your plex, sonarr, radarr instances, the sonarr/radarr api keys and which libraries you want to watch. The plex token will be automatically added when you click the authentication link after starting the app again. The client id can be ignored.
 
-You can change the default interval and time (weekly every monday at 5:00AM) to daily or monthly.
+You can change the default interval (once).
 
 E.g. `clex -interval daily -time 5:00PM` or `clex -interval monthly -time 17:00`
