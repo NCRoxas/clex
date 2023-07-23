@@ -78,7 +78,12 @@ func filter(c *util.Config, library []Library, movies, shows chan PlexMedia, qui
 						//	Remove unfinished episodes
 						if e.ViewCount > 0 && e.ViewOffset == 0 {
 							shows <- e
-							log.Info().Str("Show", e.GrandparentTitle).Str("Title", e.Title).Int64("Season", e.SeasonNumber).Int64("Episode", e.EpisodeNumber).Msg("Found watched show:")
+							log.Info().
+								Str("Show", e.GrandparentTitle).
+								Str("Title", e.Title).
+								Int64("Season", e.SeasonNumber).
+								Int64("Episode", e.EpisodeNumber).
+								Msg("Found watched show:")
 						}
 					}
 				}
