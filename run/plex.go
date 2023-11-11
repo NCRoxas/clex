@@ -15,7 +15,7 @@ func ScanMedia(c *util.Config) ([]PlexMedia, []PlexMedia) {
 	url := fmt.Sprintf("%v/library/sections/", c.Hosts.Plex)
 	data := fetch(url, c.Tokens.Plex)
 
-	// Check if library name exists on the server
+	// Check if library name exists on the server and add the correct key
 	library := []Library{}
 	for _, v := range data.Library {
 		for _, w := range c.Libraries {
@@ -51,10 +51,9 @@ func ScanMedia(c *util.Config) ([]PlexMedia, []PlexMedia) {
 func filter(c *util.Config, library []Library, movies, shows chan PlexMedia, quit chan struct{}) {
 	for _, v := range library {
 		baseUrl := fmt.Sprintf("%v/library/sections/%v/all/", c.Hosts.Plex, v.Key)
+		data := fetch(baseUrl+"?unwatched=0", c.Tokens.Plex)
 
 		if v.Type == "movie" {
-			data := fetch(baseUrl+"?unwatched=0", c.Tokens.Plex)
-
 			for _, v := range data.Media {
 				movies <- v
 				log.Info().Str("Title", v.Title).Msg("Found watched movie:")
@@ -62,8 +61,6 @@ func filter(c *util.Config, library []Library, movies, shows chan PlexMedia, qui
 		}
 
 		if v.Type == "show" {
-			data := fetch(baseUrl, c.Tokens.Plex)
-
 			for _, v := range data.Media {
 				// Filter seasons containing watched episodes
 				urlShow := fmt.Sprintf("%v%v?unwatched=0", c.Hosts.Plex, v.Key)

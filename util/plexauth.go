@@ -17,16 +17,16 @@ import (
 )
 
 type PinData struct {
-	ID               int       `json:"id"`
-	Code             string    `json:"code"`
-	Product          string    `json:"product"`
-	Trusted          bool      `json:"trusted"`
-	ClientIdentifier string    `json:"clientIdentifier"`
-	ExpiresIn        int       `json:"expiresIn"`
-	CreatedAt        time.Time `json:"createdAt"`
-	ExpiresAt        time.Time `json:"expiresAt"`
-	AuthToken        string    `json:"authToken"`
-	NewRegistration  bool      `json:"newRegistration"`
+	ID               int       `json:"id,omitempty"`
+	Code             string    `json:"code,omitempty"`
+	Product          string    `json:"product,omitempty"`
+	Trusted          bool      `json:"trusted,omitempty"`
+	ClientIdentifier string    `json:"clientIdentifier,omitempty"`
+	ExpiresIn        int       `json:"expiresIn,omitempty"`
+	CreatedAt        time.Time `json:"createdAt,omitempty"`
+	ExpiresAt        time.Time `json:"expiresAt,omitempty"`
+	AuthToken        string    `json:"authToken,omitempty"`
+	NewRegistration  bool      `json:"newRegistration,omitempty"`
 }
 
 const (
@@ -47,7 +47,9 @@ func (c *Config) PlexVerify() {
 
 	timeout := time.Duration(1 * time.Second)
 	if _, err := net.DialTimeout("tcp", host.Hostname()+":"+port, timeout); err != nil {
-		log.Fatal().Err(err).Msg("Host is down. Check if you entered the correct URL of your Plex server!")
+		log.Fatal().
+			Err(err).
+			Msg("Host is down. Check if you entered the correct URL of your Plex server!")
 		return
 	}
 
@@ -169,7 +171,11 @@ func (p *PinData) Poll(wg *sync.WaitGroup) {
 			"code":                     {p.Code},
 			"X-Plex-client-Identifier": {p.ClientIdentifier},
 		}
-		req, err := http.NewRequest("GET", plexPin+strconv.Itoa(p.ID), strings.NewReader(v.Encode()))
+		req, err := http.NewRequest(
+			"GET",
+			plexPin+strconv.Itoa(p.ID),
+			strings.NewReader(v.Encode()),
+		)
 		if err != nil {
 			log.Fatal().Err(err)
 		}

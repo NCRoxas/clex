@@ -3,7 +3,6 @@ package util
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -48,7 +47,7 @@ func (c *Config) InitConfig() (*starr.Config, *starr.Config, error) {
 
 func (c *Config) readConfig() (*starr.Config, *starr.Config, error) {
 	configPath := getConfigPath()
-	data, err := ioutil.ReadFile(configPath)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
@@ -73,7 +72,8 @@ func (c *Config) readConfig() (*starr.Config, *starr.Config, error) {
 			port = "443"
 		}
 
-		if _, err := net.DialTimeout("tcp", host.Hostname()+":"+port, time.Duration(10*time.Second)); service != "" && err != nil {
+		if _, err := net.DialTimeout("tcp", host.Hostname()+":"+port, time.Duration(10*time.Second)); service != "" &&
+			err != nil {
 			msg := fmt.Sprintf("%v is down. Check if you entered the correct URL!", host.Hostname())
 			return nil, nil, errors.New(msg)
 		}
@@ -85,7 +85,7 @@ func (c *Config) readConfig() (*starr.Config, *starr.Config, error) {
 		fmt.Scanf("%s", &c.Tokens.Sonarr)
 		c.WriteConfig()
 		if c.Tokens.Sonarr == "" {
-			return nil, nil, errors.New("Sonarr API key is missing!")
+			return nil, nil, errors.New("sonarr token is missing")
 		}
 	} else if c.Tokens.Sonarr != "" && c.Hosts.Sonarr != "" {
 		sonarr = starr.New(c.Tokens.Sonarr, c.Hosts.Sonarr, 0)
@@ -95,7 +95,7 @@ func (c *Config) readConfig() (*starr.Config, *starr.Config, error) {
 		fmt.Scanf("%s", &c.Tokens.Radarr)
 		c.WriteConfig()
 		if c.Tokens.Radarr == "" {
-			return nil, nil, errors.New("Radarr API key is missing!")
+			return nil, nil, errors.New("radarr token is missing")
 		}
 	} else if c.Tokens.Radarr != "" && c.Hosts.Radarr != "" {
 		radarr = starr.New(c.Tokens.Radarr, c.Hosts.Radarr, 0)
@@ -105,11 +105,11 @@ func (c *Config) readConfig() (*starr.Config, *starr.Config, error) {
 		fmt.Scanf("%s", &c.Hosts.Plex)
 		c.WriteConfig()
 		if c.Hosts.Plex == "" {
-			return nil, nil, errors.New("Plex host is missing!")
+			return nil, nil, errors.New("plex host is missing")
 		}
 		_, err := url.ParseRequestURI(c.Hosts.Plex)
 		if err != nil {
-			return nil, nil, errors.New("Seems like your Plex host url is malformed!")
+			return nil, nil, errors.New("seems like your plex host url is malformed")
 		}
 
 	}
@@ -126,7 +126,7 @@ func (c *Config) WriteConfig() {
 	}
 
 	os.Mkdir(base[0], os.ModePerm)
-	err = ioutil.WriteFile(configPath, data, 0644)
+	err = os.WriteFile(configPath, data, 0644)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
@@ -145,7 +145,7 @@ func parseBooleanInput(input string) (bool, error) {
 	case "n":
 		return false, nil
 	default:
-		return false, fmt.Errorf("Invalid boolean input: %s", input)
+		return false, fmt.Errorf("invalid boolean input: %s", input)
 	}
 }
 
@@ -162,6 +162,7 @@ func (c *Config) onboard() {
 	log.Info().Msg("New installation detected! Generating a new config...")
 	log.Info().Msgf("Your new client ID: %v", clientId.String())
 	log.Info().Msg("Set your Plex host: (e.g. http://localhost:32400)")
+	fmt.Print("> ")
 	fmt.Scanf("%s", &c.Hosts.Plex)
 	_, err := url.ParseRequestURI(c.Hosts.Plex)
 	if err != nil {
@@ -170,6 +171,7 @@ func (c *Config) onboard() {
 
 	// Optional arr's
 	log.Info().Msg("Set your Sonarr host: (e.g. http://localhost:8989)")
+	fmt.Print("> ")
 	fmt.Scanf("%s", &c.Hosts.Sonarr)
 	if c.Hosts.Sonarr != "" {
 		_, err = url.ParseRequestURI(c.Hosts.Sonarr)
@@ -178,6 +180,7 @@ func (c *Config) onboard() {
 		}
 	}
 	log.Info().Msg("Set your Radarr host: (e.g. http://localhost:8989)")
+	fmt.Print("> ")
 	fmt.Scanf("%s", &c.Hosts.Radarr)
 	if c.Hosts.Radarr != "" {
 		_, err = url.ParseRequestURI(c.Hosts.Radarr)
@@ -189,6 +192,7 @@ func (c *Config) onboard() {
 	// If user inputs host token is needed
 	if c.Hosts.Sonarr != "" {
 		log.Info().Msg("Set your Sonarr API token: ")
+		fmt.Print("> ")
 		fmt.Scanf("%s", &c.Tokens.Sonarr)
 		if c.Tokens.Sonarr == "" {
 			log.Fatal().Msg("Sonarr API key is missing!")
@@ -196,6 +200,7 @@ func (c *Config) onboard() {
 	}
 	if c.Hosts.Radarr != "" {
 		log.Info().Msg("Set your Radarr API token: ")
+		fmt.Print("> ")
 		fmt.Scanf("%s", &c.Tokens.Radarr)
 		if c.Tokens.Radarr == "" {
 			log.Fatal().Msg("Radarr API key is missing!")
@@ -205,18 +210,23 @@ func (c *Config) onboard() {
 	// Optional fields with defaults
 	var deleteMode, excludeMode string
 	log.Info().Msg("Do you want to delete shows/movies after watching <yes/no>? Default: yes")
+	fmt.Print("> ")
 	fmt.Scanf("%s", &deleteMode)
 	if deleteMode != "" {
 		c.Delete, _ = parseBooleanInput(deleteMode)
 	}
-	log.Info().Msg("Do you want to add shows/movies to the exclusion list after watching <yes/no>? Default: yes")
+	log.Info().
+		Msg("Do you want to add shows/movies to the exclusion list after watching <yes/no>? Default: yes")
+	fmt.Print("> ")
 	fmt.Scanf("%s", &excludeMode)
 	if excludeMode != "" {
 		c.Exclude, _ = parseBooleanInput(excludeMode)
 	}
 
 	var libraries string
-	log.Info().Msg("Which libraries do you want to watch <separated by commas>? Default: Movies,TV Shows")
+	log.Info().
+		Msg("Which libraries do you want to watch? Default: Movies,TV Shows")
+	fmt.Print("> ")
 	fmt.Scanln(&libraries)
 	if libraries != "" {
 		c.Libraries = strings.Split(libraries, ",")

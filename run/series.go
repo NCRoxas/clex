@@ -12,7 +12,6 @@ import (
 func QueueSeries(sc *starr.Config, media []PlexMedia, c *util.Config) {
 	s := sonarr.New(sc)
 	series, _ := s.GetAllSeries()
-
 	watchedShows := filterWatchedShows(series, media)
 
 	// Get episode file numbers
@@ -22,7 +21,10 @@ func QueueSeries(sc *starr.Config, media []PlexMedia, c *util.Config) {
 		for season, episodes := range info {
 			for _, file := range sonarrFileInfo {
 				if file.SeasonNumber == season && findEpisode(episodes, file.EpisodeNumber) {
-					queue.Watched = append(queue.Watched, file.ID)          // ID of episode in sonarr
+					queue.Watched = append(
+						queue.Watched,
+						file.ID,
+					) // ID of episode in sonarr
 					queue.FileID = append(queue.FileID, file.EpisodeFileID) // ID of file on disk
 				}
 			}
@@ -31,46 +33,56 @@ func QueueSeries(sc *starr.Config, media []PlexMedia, c *util.Config) {
 
 	// Unmonitor episodes
 	s.MonitorEpisode(queue.Watched, false)
+	log.Info().Msgf("Unmonitored %d episodes", len(queue.Watched))
 
+	// TODO: Handle this better
 	// Unmonitor seasons
-	for id := range watchedShows {
-		show, _ := s.GetSeriesByID(id)
-		episodes, _ := s.GetSeriesEpisodes(id)
-		watchedSe := 0
-
-		for i := range show.Seasons {
-			watchedEp := 0
-			total := show.Seasons[i].Statistics.TotalEpisodeCount
-
-			// Count unmonitored episodes
-			for _, ep := range episodes {
-				if ep.SeasonNumber == int64(i) && ep.Monitored == false {
-					watchedEp++
-				}
-			}
-
-			// Unmonitor seasons
-			if watchedEp == total && show.Seasons[i].Monitored == true {
-				log.Info().Str("Title", show.Title).Int("Season", i).Msg("Unmonitoring season")
-				show.Seasons[i].Monitored = false
-			}
-
-			if show.Seasons[i].Monitored == false {
-				watchedSe++
-			}
-			watchedEp = 0
-		}
-
-		// Unmonitor show
-		if show.Ended && watchedSe == show.Statistics.SeasonCount+1 {
-			log.Info().Str("Title", show.Title).Msg("Unmonitoring show")
-			show.Monitored = false
-		}
-
-		if err := s.UpdateSeries(id, show); err != nil {
-			log.Error().Msg(err.Error())
-		}
-	}
+	//for id := range watchedShows {
+	//	show, err := s.GetSeriesByID(id)
+	//	if err != nil {
+	//		log.Error().Msg(err.Error())
+	//		continue
+	//	}
+	//
+	//	episodes, err := s.GetSeriesEpisodes(id)
+	//	if err != nil {
+	//		log.Error().Msg(err.Error())
+	//		continue
+	//	}
+	//
+	//	watchedSeasons := 0
+	//	for i := range show.Seasons {
+	//		watchedEpisodes := 0
+	//		total := show.Seasons[i].Statistics.TotalEpisodeCount
+	//
+	//		// Count unmonitored episodes
+	//		for _, ep := range episodes {
+	//			if ep.SeasonNumber == int64(i) && !ep.Monitored {
+	//				watchedEpisodes++
+	//			}
+	//		}
+	//
+	//		// Unmonitor seasons
+	//		if watchedEpisodes == total && show.Seasons[i].Monitored {
+	//			log.Info().Str("Title", show.Title).Int("Season", i).Msg("Unmonitoring season")
+	//			show.Seasons[i].Monitored = false
+	//		}
+	//
+	//		if show.Seasons[i].Monitored {
+	//			watchedSeasons++
+	//		}
+	//		watchedEpisodes = 0
+	//	}
+	//
+	//	// Unmonitor show
+	//	if show.Ended && watchedSeasons == show.Statistics.SeasonCount+1 {
+	//		log.Info().Str("Title", show.Title).Msg("Unmonitoring show")
+	//		show.Monitored = false
+	//	}
+	//	//if err := s.UpdateSeries(id, show); err != nil {
+	//	//	log.Error().Msg(err.Error())
+	//	//}
+	//}
 
 	// Delete Episodefiles
 	if c.Delete {
@@ -78,8 +90,6 @@ func QueueSeries(sc *starr.Config, media []PlexMedia, c *util.Config) {
 			s.DeleteEpisodeFile(file)
 		}
 		log.Info().Msgf("Deleted %d episodes", len(queue.Watched))
-	} else {
-		log.Info().Msgf("Unmonitored %d episodes", len(queue.Watched))
 	}
 }
 
@@ -101,7 +111,8 @@ func filterWatchedShows(series []*sonarr.Series, media []PlexMedia) map[int64]ma
 		season := map[int64][]int64{}
 
 		for _, m := range media {
-			if strings.EqualFold(show.Title, m.OriginalTitle) || strings.EqualFold(show.Title, m.GrandparentTitle) {
+			if strings.EqualFold(show.Title, m.OriginalTitle) ||
+				strings.EqualFold(show.Title, m.GrandparentTitle) {
 				episodes = append(episodes, m.EpisodeNumber)
 				season[m.SeasonNumber] = episodes
 				shows[show.ID] = season

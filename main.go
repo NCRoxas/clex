@@ -17,7 +17,11 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	interval := flag.String("interval", "once", "Set interval of cleanup job. Choices are: once, daily, weekly, monthly")
+	interval := flag.String(
+		"interval",
+		"once",
+		"Set interval of cleanup job. Choices are: once, daily, weekly, monthly",
+	)
 	runAt := flag.String("time", "05:00", "Set time when to run cleanup job")
 	flag.Parse()
 
@@ -47,7 +51,6 @@ func job() {
 		log.Fatal().Err(err).Msg("Failed to initialize config")
 	}
 	c.PlexVerify()
-
 	watchedMovies, watchedSeries := run.ScanMedia(&c)
 	if radarr != nil {
 		run.QueueMovies(radarr, watchedMovies, &c)
